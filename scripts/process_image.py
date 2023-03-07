@@ -77,16 +77,11 @@ for i in range(len(dirListing) - 1):
         preds = model(img).cpu()
         output["preds"] = dict(zip(xrv.datasets.default_pathologies,preds[0].detach().numpy()))
 
-        # if headerShow:
         df = pd.DataFrame(data=output['preds'].values(), index=output['preds'].keys() if headerShow else None)
         df = (df.T)
 
         df.to_csv('data.csv',mode='a',index=False, header=None if headerShow == False else True)
-        # else:
-        #     df = pd.DataFrame(data=output['preds'].values())
-        #     df = (df.T)
 
-        #     df.to_csv('data.csv',mode='a',index=False,header=None)
     headerShow = False
 
 print("done")
