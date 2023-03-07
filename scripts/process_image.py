@@ -16,8 +16,7 @@ import torchvision, torchvision.transforms
 
 import torchxrayvision as xrv
 import pandas as pd
-import json
-import csv
+import glob
 
 parser = argparse.ArgumentParser()
 parser.add_argument('-f', type=str, default="", help='')
@@ -78,16 +77,16 @@ for i in range(len(dirListing) - 1):
         preds = model(img).cpu()
         output["preds"] = dict(zip(xrv.datasets.default_pathologies,preds[0].detach().numpy()))
 
-        if headerShow:
-            df = pd.DataFrame(data=output['preds'].values(), index=output['preds'].keys())
-            df = (df.T)
+        # if headerShow:
+        df = pd.DataFrame(data=output['preds'].values(), index=output['preds'].keys() if headerShow else None)
+        df = (df.T)
 
-            df.to_csv('data.csv',mode='a',index=False)
-        else:
-            df = pd.DataFrame(data=output['preds'].values())
-            df = (df.T)
+        df.to_csv('data.csv',mode='a',index=False, header=None if headerShow == False else True)
+        # else:
+        #     df = pd.DataFrame(data=output['preds'].values())
+        #     df = (df.T)
 
-            df.to_csv('data.csv',mode='a',index=False,header=None)
+        #     df.to_csv('data.csv',mode='a',index=False,header=None)
     headerShow = False
 
 print("done")
