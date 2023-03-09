@@ -35,7 +35,7 @@ dirListing = os.listdir(img_folder_path)
 for i in range(len(dirListing) - 1):
     i+=1
     print(f"currently at {i} out of {len(dirListing) - 1}")
-    img = skimage.io.imread(f"../tests/images/{i}.jpg")
+    img = skimage.io.imread(f"../tests/images/{dirListing[i]}")
     img = xrv.datasets.normalize(img, 255)  
 
 

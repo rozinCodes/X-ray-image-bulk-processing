@@ -5,4 +5,4 @@ __pycache__
 *.mp4
 *.png
 *.DS_Store
-tests/images/
+tests/images/*
