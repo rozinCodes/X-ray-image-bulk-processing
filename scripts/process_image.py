@@ -9,7 +9,6 @@ import numpy as np
 import argparse
 import skimage, skimage.io
 import pprint
-import filetype
 
 
 import torch
@@ -35,9 +34,10 @@ headerShow = True
 img_folder_path = '../tests/images/'
 dirListing = os.listdir(img_folder_path)
 # dirListing = glob.glob("../tests/images/")
-image_files = [dirListing for dir in dirListing if dir.endswith(('jpg', 'jpeg', 'png', 'gif'))]
+image_formats = [".jpg", ".jpeg", ".png", ".gif", ".bmp"]
+images = [file for file in dirListing if os.path.splitext(file)[1].lower() in image_formats]
 
-print(len(image_files))
+print(len(images))
 
 questions = [inquirer.List('function','Which function do you want to run? (Make sure to place your image files in test/images)', choices=['Bulk Process', 'Single'], default='Bulk Process',
                            carousel=True)]
@@ -45,10 +45,10 @@ answers = inquirer.prompt(questions)
 
 if answers['function'] == 'Bulk Process':
 
-    for i in range(len(dirListing) - 1):
-        i+=1
-        print(f"{dirListing[i]} currently at {i} out of {len(dirListing) - 1}")
-        img = skimage.io.imread(f"../tests/images/{dirListing[i]}")
+    for i in range(len(images)):
+
+        print(f"{images[i]} currently at {i} out of {len(images) - 1}")
+        img = skimage.io.imread(f"../tests/images/{images[i]}")
         img = xrv.datasets.normalize(img, 255)  
 
 
