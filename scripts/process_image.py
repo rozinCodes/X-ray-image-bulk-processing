@@ -30,76 +30,90 @@ parser.add_argument('-resize', default=False, help='', action='store_true')
 
 cfg = parser.parse_args()
 
-headerShow = True
 img_folder_path = '../tests/images/'
 dirListing = os.listdir(img_folder_path)
-# dirListing = glob.glob("../tests/images/")
-image_formats = [".jpg", ".jpeg", ".png", ".gif", ".bmp"]
+image_formats = [".jpg", ".jpeg", ".png"]
 images = [file for file in dirListing if os.path.splitext(file)[1].lower() in image_formats]
 
-print(len(images))
 
-questions = [inquirer.List('function','Which function do you want to run? (Make sure to place your image files in test/images)', choices=['Bulk Process', 'Single'], default='Bulk Process',
+questions = [inquirer.List('function','Which function do you want to run? (Make sure to place your image files in test/images)',
+ choices=['Bulk Process', 'Single'], default='Bulk Process',
                            carousel=True)]
 answers = inquirer.prompt(questions)
 
-if answers['function'] == 'Bulk Process':
 
-    for i in range(len(images)):
+#function to process image
 
-        print(f"{images[i]} currently at {i} out of {len(images) - 1}")
-        img = skimage.io.imread(f"../tests/images/{images[i]}")
-        img = xrv.datasets.normalize(img, 255)  
-
-
-        # Check that images are 2D arrays
-        if len(img.shape) > 2:
-            img = img[:, :, 0]
-        if len(img.shape) < 2:
-            print("error, dimension lower than 2 for image")
-
-        # Add color channel
-        img = img[None, :, :]
+def process_image(i):
+    headerShow = False if i > 0 else True
+    print(images[i])
+    img = skimage.io.imread(f"../tests/images/{images[i]}")
+    img = xrv.datasets.normalize(img, 255)  
 
 
-        # the models will resize the input to the correct size so this is optional.
-        if cfg.resize:
-            transform = torchvision.transforms.Compose([xrv.datasets.XRayCenterCrop(),
-                                                        xrv.datasets.XRayResizer(224)])
-        else:
-            transform = torchvision.transforms.Compose([xrv.datasets.XRayCenterCrop()])
+    # Check that images are 2D arrays
+    if len(img.shape) > 2:
+        img = img[:, :, 0]
+    if len(img.shape) < 2:
+        print("error, dimension lower than 2 for image")
 
-        img = transform(img)
+    # Add color channel
+    img = img[None, :, :]
 
 
-        model = xrv.models.get_model(cfg.weights)
+    # the models will resize the input to the correct size so this is optional.
+    if cfg.resize:
+        transform = torchvision.transforms.Compose([xrv.datasets.XRayCenterCrop(),
+                                                    xrv.datasets.XRayResizer(224)])
+    else:
+        transform = torchvision.transforms.Compose([xrv.datasets.XRayCenterCrop()])
 
-        output = {}
-        with torch.no_grad():
-            img = torch.from_numpy(img).unsqueeze(0)
-            if cfg.cuda:
-                img = img.cuda()
-                model = model.cuda()
-                
-            if cfg.feats:
-                feats = model.features(img)
-                feats = F.relu(feats, inplace=True)
-                feats = F.adaptive_avg_pool2d(feats, (1, 1))
-                output["feats"] = list(feats.cpu().detach().numpy().reshape(-1))
+    img = transform(img)
 
-            preds = model(img).cpu()
-            output["preds"] = dict(zip(xrv.datasets.default_pathologies,preds[0].detach().numpy()))
 
-            df = pd.DataFrame(data=output['preds'].values(), index=output['preds'].keys() if headerShow else None,)
-            df = (df.T)
+    model = xrv.models.get_model(cfg.weights)
+
+    output = {}
+    with torch.no_grad():
+        img = torch.from_numpy(img).unsqueeze(0)
+        if cfg.cuda:
+            img = img.cuda()
+            model = model.cuda()
             
-            df["Filename"] = [dirListing[i]]
-            df.insert(0, 'Filename', df.pop('Filename'))
-            df.to_csv('data.csv',mode='a', index=False, header=None if headerShow == False else True)
-        headerShow = False
-else:
-    print("Single process file under development")
+        if cfg.feats:
+            feats = model.features(img)
+            feats = F.relu(feats, inplace=True)
+            feats = F.adaptive_avg_pool2d(feats, (1, 1))
+            output["feats"] = list(feats.cpu().detach().numpy().reshape(-1))
 
+        preds = model(img).cpu()
+        output["preds"] = dict(zip(xrv.datasets.default_pathologies,preds[0].detach().numpy()))
+
+        df = pd.DataFrame(data=output['preds'].values(), index=output['preds'].keys() if headerShow else None,)
+        df = (df.T)
+        
+        df["Filename"] = [images[i]]
+        df.insert(0, 'Filename', df.pop('Filename'))
+        df.to_csv('data.csv',mode='a', index=False, header=None if headerShow == False else True)
+
+
+try:
+    if answers['function'] == 'Bulk Process':
+
+        for i in range(len(images)):
+
+            print(f"{images[i]} currently at position {i + 1} out of {len(images)}")
+            process_image(i)
+            
+    else:
+        questions = [inquirer.List('image','on which image do you want to run your analysis?',
+        choices=images, default=images[0],
+                           carousel=True)]
+        answers = inquirer.prompt(questions)
+        process_image(images.index(answers['image']))
+
+except Exception as e:
+    print("Error: ", e)
 # if cfg.feats:
 #     print(output)
 # else:
