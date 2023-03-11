@@ -7,4 +7,4 @@ pandas>=1
 requests>=1
 pillow>=5.3.0
 matplotlib>=3.7.1
-inquirer
+inquirer>=3.1.3

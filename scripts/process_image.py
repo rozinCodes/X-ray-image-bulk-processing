@@ -35,11 +35,15 @@ dirListing = os.listdir(img_folder_path)
 image_formats = [".jpg", ".jpeg", ".png"]
 images = [file for file in dirListing if os.path.splitext(file)[1].lower() in image_formats]
 
+if len(images) >= 1:
 
-questions = [inquirer.List('function','Which function do you want to run? (Make sure to place your image files in test/images)',
- choices=['Bulk Process', 'Single'], default='Bulk Process',
+    questions = [inquirer.List('function','Which function do you want to run? (Make sure to place your image files in test/images)',
+    choices=['Bulk image Processing', 'Single image process'], default='Bulk image Processing',
                            carousel=True)]
-answers = inquirer.prompt(questions)
+    answers = inquirer.prompt(questions)
+else:
+    print("No images found in test/images/")
+    exit()
 
 
 #function to process image
@@ -98,7 +102,7 @@ def process_image(i):
 
 
 try:
-    if answers['function'] == 'Bulk Process':
+    if answers['function'] == 'Bulk image Processing':
 
         for i in range(len(images)):
 
