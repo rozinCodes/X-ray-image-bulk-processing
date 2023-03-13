@@ -22,7 +22,7 @@ parser.add_argument('-cuda', default=False, help='', action='store_true')
 parser.add_argument('-resize', default=False, help='', action='store_true')
 
 
-img_folder_path = '../tests/images/'
+img_folder_path = '../temp/'
 dirListing = os.listdir(img_folder_path)
 image_formats = [".jpg", ".jpeg", ".png"]
 images = [file for file in dirListing if os.path.splitext(file)[1].lower() in image_formats]
@@ -101,8 +101,8 @@ def hello_world():
 
     return jsonString
 
-csvFilePath = r'data.csv'
-jsonFilePath = r'data.json'
+csvFilePath = r'../processed_data/data.csv'
+jsonFilePath = r'../processed_data/data.json'
 
 
 

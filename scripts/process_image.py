@@ -33,7 +33,7 @@ parser.add_argument('-cuda', default=False, help='', action='store_true')
 parser.add_argument('-resize', default=False, help='', action='store_true')
 
 
-img_folder_path = '../tests/images/'
+img_folder_path = '../images/'
 dirListing = os.listdir(img_folder_path)
 image_formats = [".jpg", ".jpeg", ".png"]
 images = [file for file in dirListing if os.path.splitext(file)[1].lower() in image_formats]
@@ -45,16 +45,15 @@ app.config['UPLOAD_FOLDER'] = img_folder_path
 
 if len(images) >= 1:
 
-    questions = [inquirer.List('function','Which function do you want to run? (Make sure to place your image files in test/images)',
+    questions = [inquirer.List('function','Which function do you want to run? (Make sure to place your image files in images/)',
     choices=['Bulk image Processing', 'Single image process'], default='Bulk image Processing',
                         carousel=True)]
     answers = inquirer.prompt(questions)
 else:
-    print("No images found in test/images/")
+    print("No images found in images/")
 
 #function to process image
 def process_image(i):
-
     print(f"{images[i]} currently at position {i + 1} out of {len(images)}")
 
 
@@ -108,13 +107,14 @@ def process_image(i):
         
         df["Filename"] = [images[i]]
         df.insert(0, 'Filename', df.pop('Filename'))
-        df.to_csv('data.csv',mode='a', index=False, header=None if headerShow == False else True)
+        df.to_csv('../processed_data/data.csv',mode='a', index=False, header=None if headerShow == False else True)
 
 if answers['function'] == 'Bulk image Processing':
     for i in range(len(images)):
         process_image(i)
     print("Done")
 else:
+    
     questions = [inquirer.List('image','on which image do you want to run your analysis?',
     choices=images, default=images[0],
                     carousel=True)]
