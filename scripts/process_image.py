@@ -8,18 +8,22 @@ import matplotlib.pyplot as plt
 import numpy as np
 import argparse
 import skimage, skimage.io
-import pprint
+from flask import Flask
 
 
 import torch
 import torch.nn.functional as F
 import torchvision, torchvision.transforms
+import subprocess
+
 
 import torchxrayvision as xrv
 import pandas as pd
-import glob
 import inquirer
-
+import csv
+import json
+import requests
+from flask import jsonify,request,url_for,send_from_directory
 parser = argparse.ArgumentParser()
 parser.add_argument('-f', type=str, default="", help='')
 # parser.add_argument('img_path', type=str)
@@ -28,30 +32,35 @@ parser.add_argument('-feats', default=False, help='', action='store_true')
 parser.add_argument('-cuda', default=False, help='', action='store_true')
 parser.add_argument('-resize', default=False, help='', action='store_true')
 
-cfg = parser.parse_args()
 
 img_folder_path = '../tests/images/'
 dirListing = os.listdir(img_folder_path)
 image_formats = [".jpg", ".jpeg", ".png"]
 images = [file for file in dirListing if os.path.splitext(file)[1].lower() in image_formats]
+app = Flask(__name__)
+app.logger.setLevel('DEBUG')
+app.config['UPLOAD_FOLDER'] = img_folder_path
+
+
 
 if len(images) >= 1:
 
     questions = [inquirer.List('function','Which function do you want to run? (Make sure to place your image files in test/images)',
     choices=['Bulk image Processing', 'Single image process'], default='Bulk image Processing',
-                           carousel=True)]
+                        carousel=True)]
     answers = inquirer.prompt(questions)
 else:
     print("No images found in test/images/")
-    exit()
-
 
 #function to process image
-
 def process_image(i):
+
+    print(f"{images[i]} currently at position {i + 1} out of {len(images)}")
+
+
     headerShow = False if i > 0 else True
     print(images[i])
-    img = skimage.io.imread(f"../tests/images/{images[i]}")
+    img = skimage.io.imread(f"{img_folder_path}/{images[i]}")
     img = xrv.datasets.normalize(img, 255)  
 
 
@@ -63,6 +72,7 @@ def process_image(i):
 
     # Add color channel
     img = img[None, :, :]
+    cfg = parser.parse_args()
 
 
     # the models will resize the input to the correct size so this is optional.
@@ -100,27 +110,17 @@ def process_image(i):
         df.insert(0, 'Filename', df.pop('Filename'))
         df.to_csv('data.csv',mode='a', index=False, header=None if headerShow == False else True)
 
-
-try:
-    if answers['function'] == 'Bulk image Processing':
-
-        for i in range(len(images)):
-
-            print(f"{images[i]} currently at position {i + 1} out of {len(images)}")
-            process_image(i)
-            
-    else:
-        questions = [inquirer.List('image','on which image do you want to run your analysis?',
-        choices=images, default=images[0],
-                           carousel=True)]
-        answers = inquirer.prompt(questions)
-        process_image(images.index(answers['image']))
-
-except Exception as e:
-    print("Error: ", e)
-# if cfg.feats:
-#     print(output)
-# else:
-#     pprint.pprint(output)
+if answers['function'] == 'Bulk image Processing':
+    for i in range(len(images)):
+        process_image(i)
+    print("Done")
+else:
+    questions = [inquirer.List('image','on which image do you want to run your analysis?',
+    choices=images, default=images[0],
+                    carousel=True)]
+    answers = inquirer.prompt(questions)
+    process_image(images.index(answers['image']))
     
-   
+
+
+
