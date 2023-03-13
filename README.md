@@ -14,15 +14,17 @@ Modifications
 
 Clone the project  
 ~~~bash 
-git clone https://github.com/rozinCodes/X-ray-image-bulk-processing.git
+git clone https://github.com/rozinCodes/X-ray-image-processing.git
 ~~~
 
 Install the necessary packages
+
 ~~~bash
 pip install -r requirements.txt
 ~~~
 
-Place some image(s) in the test/images folder
+Place some image(s) in the images folder
+
 ~~~bash
 cd scripts
 ~~~
@@ -34,8 +36,10 @@ python process_image.py
 
 There will be a prompt asking you to select if you want to process a single image or process mutiple images together
 
-If you select Bulk image processing, images in the test/images/ folder will be processed and the results will be stored in scripts folder in a csv file called data.csv
+If you select Bulk image processing, images in the images/ folder will start being processed one after another.
 There is an option to choose from images when selecting single image processing.
+
+After the processing is finished, the data.csv file will be saved in the processed_data folder
 
 # Contributions
 Any code optimization contributions or features are always welcome
