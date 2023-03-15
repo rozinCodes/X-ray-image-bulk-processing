@@ -5,8 +5,8 @@ import os,sys
 sys.path.insert(0,"..")
 import argparse
 from flask import Flask
-
-
+# from process_image import process_image
+import ast
 import subprocess
 
 
@@ -61,10 +61,13 @@ def signin():
 @app.route('/api/upload', methods=['POST'])
 def upload_file():
     file = request.files['file']
+    process_type = request.form['process_type']
     filename = file.filename
     file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+    data = subprocess.run(["python", "api_process.py", f"../temp/{filename}"],stdout=subprocess.PIPE)
+    
     file_url = url_for('uploaded_file', filename=filename, _external=True)
-    return jsonify({'status': 'success', 'file_url': file_url})
+    return jsonify({'status': 'success','process_type': process_type, 'file_url': file_url, 'data': ast.literal_eval(data.stdout.decode('utf-8'))})
 
 @app.route('/uploads/<filename>')
 def uploaded_file(filename):
@@ -77,27 +80,31 @@ def uploaded_file(filename):
 #csv to json api
 
 @app.route('/', methods=['GET'])
-def hello_world():
+def receive_list():
     jsonArray = []
+    
     file_exists = os.path.isfile(csvFilePath)
     #read csv file
-    try:
-        with open(csvFilePath, encoding='utf-8') as csvf: 
-            #load csv file data using csv library's dictionary reader
-            csvReader = csv.DictReader(csvf) 
+    # try:
+    #     if file_exists:
+    #         return jsonString
+    #     else:
+    with open(csvFilePath, encoding='utf-8') as csvf: 
+        #load csv file data using csv library's dictionary reader
+        csvReader = csv.DictReader(csvf) 
 
-            #convert each csv row into python dict
-            for row in csvReader: 
-                #add this python dict to json array
-                jsonArray.append(row)
+        #convert each csv row into python dict
+        for row in csvReader: 
+            #add this python dict to json array
+            jsonArray.append(row)
 
-        #convert python jsonArray to JSON String and write to file
-        with open(jsonFilePath, 'w', encoding='utf-8') as jsonf: 
-            jsonString = json.dumps(jsonArray, indent=4)
-            jsonf.write(jsonString)
-    except:
-        print("No Data Found")
-        jsonString = {}
+    #convert python jsonArray to JSON String and write to file
+    with open(jsonFilePath, 'w', encoding='utf-8') as jsonf: 
+        jsonString = json.dumps(jsonArray, indent=4)
+        jsonf.write(jsonString)
+    # except:
+    #     print("No Data Found")
+    #     jsonString = {"message": "No Data Found"}
 
     return jsonString
 
@@ -110,24 +117,6 @@ jsonFilePath = r'../processed_data/data.json'
 
 def run_script():
     subprocess.run(["python", "process_image.py"])
-
-
-    #     exit()
-        # if answers['function'] == 'Bulk image Processing':
-
-        #     if os.path.isfile('data.csv'):
-        #         questions = [
-        #         inquirer.Confirm("continue", message="Should I continue"),
-        # ]
-
-        #         answers = inquirer.prompt(questions)
-
-                
-        #     else:
-        #         process_image(images.index(answers['image']))
-
-
-
 
 
 # # if cfg.feats:

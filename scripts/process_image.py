@@ -3,27 +3,19 @@
 
 import os,sys
 sys.path.insert(0,"..")
-from glob import glob
-import matplotlib.pyplot as plt
-import numpy as np
 import argparse
 import skimage, skimage.io
-from flask import Flask
 
 
 import torch
 import torch.nn.functional as F
 import torchvision, torchvision.transforms
-import subprocess
-
-
 import torchxrayvision as xrv
 import pandas as pd
 import inquirer
-import csv
-import json
-import requests
-from flask import jsonify,request,url_for,send_from_directory
+
+
+
 parser = argparse.ArgumentParser()
 parser.add_argument('-f', type=str, default="", help='')
 # parser.add_argument('img_path', type=str)
@@ -37,9 +29,7 @@ img_folder_path = '../images/'
 dirListing = os.listdir(img_folder_path)
 image_formats = [".jpg", ".jpeg", ".png"]
 images = [file for file in dirListing if os.path.splitext(file)[1].lower() in image_formats]
-app = Flask(__name__)
-app.logger.setLevel('DEBUG')
-app.config['UPLOAD_FOLDER'] = img_folder_path
+
 
 
 
@@ -51,15 +41,19 @@ if len(images) >= 1:
     answers = inquirer.prompt(questions)
 else:
     print("No images found in images/")
+    exit()
 
-#function to process image
+# function to process image
+
 def process_image(i):
     print(f"{images[i]} currently at position {i + 1} out of {len(images)}")
+    cfg = parser.parse_args()
 
 
     headerShow = False if i > 0 else True
-    print(images[i])
+
     img = skimage.io.imread(f"{img_folder_path}/{images[i]}")
+
     img = xrv.datasets.normalize(img, 255)  
 
 
@@ -68,10 +62,10 @@ def process_image(i):
         img = img[:, :, 0]
     if len(img.shape) < 2:
         print("error, dimension lower than 2 for image")
+        
 
     # Add color channel
     img = img[None, :, :]
-    cfg = parser.parse_args()
 
 
     # the models will resize the input to the correct size so this is optional.
@@ -105,11 +99,20 @@ def process_image(i):
         df = pd.DataFrame(data=output['preds'].values(), index=output['preds'].keys() if headerShow else None,)
         df = (df.T)
         
-        df["Filename"] = [images[i]]
-        df.insert(0, 'Filename', df.pop('Filename'))
+        # df["Filename"] = i
+        # df.insert(0, 'Filename', df.pop('Filename'))
         df.to_csv('../processed_data/data.csv',mode='a', index=False, header=None if headerShow == False else True)
-
+    
+    
 if answers['function'] == 'Bulk image Processing':
+    if os.path.isfile('../processed_data/data.csv'):
+        questions = [
+        inquirer.Confirm("continue", message="There is already a data.csv file Do you want to append to the existing file?", default=False),
+    ]
+
+        answers = inquirer.prompt(questions)
+        if answers['continue'] == False:
+            os.remove('../processed_data/data.csv')
     for i in range(len(images)):
         process_image(i)
     print("Done")
