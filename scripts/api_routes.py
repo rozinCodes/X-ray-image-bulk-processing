@@ -10,7 +10,7 @@ import ast
 import subprocess
 import psycopg2
 from werkzeug.security import generate_password_hash, check_password_hash
-
+from flask_cors import CORS
 import csv
 import json
 from flask import jsonify,request,url_for,send_from_directory
@@ -28,6 +28,7 @@ dirListing = os.listdir(img_folder_path)
 image_formats = [".jpg", ".jpeg", ".png"]
 images = [file for file in dirListing if os.path.splitext(file)[1].lower() in image_formats]
 app = Flask(__name__)
+CORS(app)
 app.logger.setLevel('ERROR')
 app.config['UPLOAD_FOLDER'] = img_folder_path
 
