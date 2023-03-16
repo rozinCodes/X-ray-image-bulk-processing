@@ -18,7 +18,6 @@ import inquirer
 
 parser = argparse.ArgumentParser()
 parser.add_argument('-f', type=str, default="", help='')
-# parser.add_argument('img_path', type=str)
 parser.add_argument('-weights', type=str,default="densenet121-res224-all")
 parser.add_argument('-feats', default=False, help='', action='store_true')
 parser.add_argument('-cuda', default=False, help='', action='store_true')
@@ -99,8 +98,8 @@ def process_image(i):
         df = pd.DataFrame(data=output['preds'].values(), index=output['preds'].keys() if headerShow else None,)
         df = (df.T)
         
-        # df["Filename"] = i
-        # df.insert(0, 'Filename', df.pop('Filename'))
+        df["Filename"] = images[i]
+        df.insert(0, 'Filename', df.pop('Filename'))
         df.to_csv('../processed_data/data.csv',mode='a', index=False, header=None if headerShow == False else True)
     
     
