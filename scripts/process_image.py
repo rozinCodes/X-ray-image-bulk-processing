@@ -1,6 +1,3 @@
-#!/usr/bin/env python
-# coding: utf-8
-
 import os,sys
 sys.path.insert(0,"..")
 import argparse

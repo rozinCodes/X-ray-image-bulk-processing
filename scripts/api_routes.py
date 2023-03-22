@@ -14,20 +14,17 @@ from flask_cors import CORS
 import csv
 import json
 from flask import jsonify,request,url_for,send_from_directory
-parser = argparse.ArgumentParser()
-parser.add_argument('-f', type=str, default="", help='')
-# parser.add_argument('img_path', type=str)
-parser.add_argument('-weights', type=str,default="densenet121-res224-all")
-parser.add_argument('-feats', default=False, help='', action='store_true')
-parser.add_argument('-cuda', default=False, help='', action='store_true')
-parser.add_argument('-resize', default=False, help='', action='store_true')
+from flask_restful import Api, Resource
+from datetime import datetime, timedelta
+import jwt
+from jwt import PyJWTError
+from typing import Optional
+import re
 
 
 img_folder_path = '../temp/'
-dirListing = os.listdir(img_folder_path)
-image_formats = [".jpg", ".jpeg", ".png"]
-images = [file for file in dirListing if os.path.splitext(file)[1].lower() in image_formats]
 app = Flask(__name__)
+api = Api(app)
 CORS(app)
 app.logger.setLevel('ERROR')
 app.config['UPLOAD_FOLDER'] = img_folder_path
@@ -42,62 +39,67 @@ def get_db():
     return conn
 
 
-#user signup api
 @app.route('/signup', methods=['POST'])
 def signup():
     try:
         data = request.get_json()
-        username = data['username']
-        email = data['email']
-        password = data['password']
-        # hashed_password = generate_password_hash(password, method='sha256')
+        username = data.get('username', '')
+        email = data.get('email', '')
+        password = data.get('password', '')
+
+        if not username:
+            return jsonify({'message': 'Username is required'})
+        if not email:
+            return jsonify({'message': 'Email is required'})
+        if not password:
+            return jsonify({'message': 'Password is required'})
+        if len(password) < 8:
+            return jsonify({'message': 'Password must be at least 8 characters'})
+        if not re.match(r"[^@]+@[^@]+\.[^@]+", email):
+            return jsonify({'message': 'Please enter a valid email address'})
 
         conn = get_db()
         cur = conn.cursor()
-        cur.execute("SELECT * FROM users WHERE username=%s OR email=%s", (username, email))
+        cur.execute("SELECT users FROM users WHERE username=%s OR email=%s", (username, email))
         result = cur.fetchone()
-        
-        
+
         if result:
+            cur.close()
+            conn.close()
             return jsonify({'message': 'User already exists'})
-        else:
-        # Add the user to the database
-            cur.execute("INSERT INTO users (username, email, password) VALUES (%s, %s, %s)", (username, email, generate_password_hash(password)))
-            conn.commit()
+
+        hashed_password = generate_password_hash(password)
+        cur.execute("INSERT INTO users (username, email, password) VALUES (%s, %s, %s)", (username, email, hashed_password))
+        conn.commit()
 
         cur.close()
         conn.close()
+
     except Exception as e:
         print(e)
-        return jsonify({'message': e})
+        return jsonify({'message': 'An error occurred while processing the request'}), 500
+
     return jsonify({'message': 'User signed up successfully'})
 
 
-#user signin api
 @app.route('/signin', methods=['POST'])
 def signin():
     data = request.get_json()
     username = data['username']
     password = data['password']
 
-    # Connect to the database
     conn = get_db()
     cur = conn.cursor()
 
-    # Get the user's hashed password from the database
     cur.execute("SELECT * FROM users WHERE username=%s", (username,))
     result = cur.fetchone()
 
     if result is None:
-        # User does not exist
         return jsonify({'message': 'Invalid username or password'})
 
-    # Check if the password is correct
     if check_password_hash(result[2], password):
-        # Password is correct
         return jsonify({'message': 'Login successful'})
     else:
-        # Password is incorrect
         return jsonify({'message': 'Invalid username or password'})
 
 
