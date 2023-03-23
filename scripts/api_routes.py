@@ -1,11 +1,8 @@
-#!/usr/bin/env python
-# coding: utf-8
-
 import os,sys
 sys.path.insert(0,"..")
-import argparse
 from flask import Flask
-# from process_image import process_image
+from flask_jwt_extended import JWTManager, create_access_token, jwt_required
+
 import ast
 import subprocess
 import psycopg2
@@ -14,17 +11,20 @@ from flask_cors import CORS
 import csv
 import json
 from flask import jsonify,request,url_for,send_from_directory
-from flask_restful import Api, Resource
-from datetime import datetime, timedelta
-import jwt
-from jwt import PyJWTError
-from typing import Optional
+from flask_restful import Api
+from datetime import timedelta
+from decouple import config
 import re
 
 
 img_folder_path = '../temp/'
 app = Flask(__name__)
 api = Api(app)
+app.config['JWT_SECRET_KEY'] = config('KEY')
+
+app.config['JWT_ACCESS_TOKEN_EXPIRES'] = timedelta(minutes=30) 
+
+jwt = JWTManager(app)
 CORS(app)
 app.logger.setLevel('ERROR')
 app.config['UPLOAD_FOLDER'] = img_folder_path
@@ -97,12 +97,17 @@ def signin():
     if result is None:
         return jsonify({'message': 'Invalid username or password'})
 
+    access_token = create_access_token(identity=username,expires_delta=timedelta(minutes=30))
+    
     if check_password_hash(result[2], password):
-        return jsonify({'message': 'Login successful'})
+        return jsonify({'message': 'Login successful','access_token': access_token}), 200
     else:
         return jsonify({'message': 'Invalid username or password'})
 
-
+@app.route('/protected', methods=['GET'])
+@jwt_required()
+def protected():
+    return jsonify({'message': 'Protected endpoint'}), 200
 
 
 #upload image api

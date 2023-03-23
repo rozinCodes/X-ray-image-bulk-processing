@@ -2,7 +2,8 @@ import os,sys
 sys.path.insert(0,"..")
 import argparse
 import skimage, skimage.io
-
+import numpy as np
+from scipy.special import softmax
 
 import torch
 import torch.nn.functional as F
@@ -28,6 +29,14 @@ images = [file for file in dirListing if os.path.splitext(file)[1].lower() in im
 
 
 
+if os.path.isfile('../processed_data/data.csv'):
+    questions = [
+    inquirer.Confirm("continue", message="There is already a data.csv file Do you want to append to the existing file?", default=True),
+]
+
+    answers = inquirer.prompt(questions)
+    if answers['continue'] == False:
+        os.remove('../processed_data/data.csv')
 
 if len(images) >= 1:
 
@@ -90,8 +99,13 @@ def process_image(i):
             output["feats"] = list(feats.cpu().detach().numpy().reshape(-1))
 
         preds = model(img).cpu()
-        output["preds"] = dict(zip(xrv.datasets.default_pathologies,preds[0].detach().numpy()))
+        # output["preds"] = softmax(preds.numpy().reshape(-1)).round(2)
+        # new_lst = [f'{i*100:.1f}%' for i in output["preds"]]
 
+        # print(new_lst)
+        
+        output["preds"] = dict(zip(xrv.datasets.default_pathologies,preds[0].detach().numpy()))
+        
         df = pd.DataFrame(data=output['preds'].values(), index=output['preds'].keys() if headerShow else None,)
         df = (df.T)
         
@@ -101,14 +115,6 @@ def process_image(i):
     
     
 if answers['function'] == 'Bulk image Processing':
-    if os.path.isfile('../processed_data/data.csv'):
-        questions = [
-        inquirer.Confirm("continue", message="There is already a data.csv file Do you want to append to the existing file?", default=False),
-    ]
-
-        answers = inquirer.prompt(questions)
-        if answers['continue'] == False:
-            os.remove('../processed_data/data.csv')
     for i in range(len(images)):
         process_image(i)
     print("Done")
