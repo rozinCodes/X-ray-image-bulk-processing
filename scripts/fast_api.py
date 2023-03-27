@@ -45,21 +45,34 @@ def read_item(item_id: int, q: Union[str, None] = None):
 
 
 @app.post("/api/upload")
-async def process_image(processed_type: str, file: UploadFile = File(...)):
+async def process_image(file: UploadFile = File(...)):
     ALLOWED_EXTENSIONS = set(['jpg', 'jpeg', 'png'])
     if file.filename.split(".")[-1].lower() not in ALLOWED_EXTENSIONS:
         return {"error": "Invalid file type. Only JPG, JPEG, and PNG are allowed."}
 
-    processed_image = None
-    # Add more processing types here
+    # processed_image = None
 
-    if processed_image is None:
-        return {"error": "Invalid processing type."}
+    # if processed_image is None:
+    #     return {"error": "Invalid processing type."}
+    file_path = f"../temp/{file.filename}"
+    with open(file_path, "wb") as buffer:
+        while True:
+            chunk = await file.read(1024)
+            if not chunk:
+                break
+            buffer.write(chunk)
+    external_url = app.url_path_for(file.filename)
 
-    filename = str(uuid.uuid4())
-    extension = file.filename.split(".")[-1].lower()
-    save_path = os.path.join("processed_images", f"{filename}.{extension}")
-    with open(save_path, "wb") as f:
-        f.write(processed_image)
+    return {"filename": file.filename, "file_path": external_url, "message": "File uploaded successfully."}
 
-    return {"url": f"/processed_images/{filename}.{extension}"}
+
+# @app.post("/api/upload")
+# async def root(file: UploadFile = File(...)):
+#     file_path = f"../temp/{file.filename}"
+#     with open(file_path, "wb") as buffer:
+#         while True:
+#             chunk = await file.read(1024)
+#             if not chunk:
+#                 break
+#             buffer.write(chunk)
+#     return {"filename": file.filename, "file_path": file_path, "message": "File uploaded successfully."}

@@ -104,12 +104,6 @@ def signin():
     else:
         return jsonify({'message': 'Invalid username or password'})
 
-@app.route('/protected', methods=['GET'])
-@jwt_required()
-def protected():
-    return jsonify({'message': 'Protected endpoint'}), 200
-
-
 #upload image api
 @app.route('/api/upload', methods=['POST'])
 def upload_file():
