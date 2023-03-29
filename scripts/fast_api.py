@@ -1,15 +1,11 @@
-from typing import Union
-
 import json
 import os
 import csv
-from fastapi import FastAPI, File, UploadFile
-import os
-import uuid
-
+import ast
+from fastapi import FastAPI, Request, File, UploadFile, HTTPException, Body, StaticFiles
+import subprocess
 
 app = FastAPI()
-
 
 @app.get("/")
 def receive_list():
@@ -38,22 +34,22 @@ def receive_list():
 csvFilePath = r'../processed_data/data.csv'
 jsonFilePath = r'../processed_data/data.json'
 
-@app.get("/items/{item_id}")
-def read_item(item_id: int, q: Union[str, None] = None):
-    return {"item_id": item_id, "q": q}
 
 
+app = FastAPI()
+
+ALLOWED_EXTENSIONS = set(['jpg', 'jpeg', 'png'])
+ALLOWED_TYPES = set(['Single', 'Multiple'])
 
 @app.post("/api/upload")
-async def process_image(file: UploadFile = File(...)):
-    ALLOWED_EXTENSIONS = set(['jpg', 'jpeg', 'png'])
+async def process_image(request: Request, process_type: str  = Body(...), file: UploadFile = File(...)):
+    if process_type not in ALLOWED_TYPES:
+        raise HTTPException(status_code=422, detail="Invalid process type. Only Single and Multiple are allowed.")
+
     if file.filename.split(".")[-1].lower() not in ALLOWED_EXTENSIONS:
-        return {"error": "Invalid file type. Only JPG, JPEG, and PNG are allowed."}
-
-    # processed_image = None
-
-    # if processed_image is None:
-    #     return {"error": "Invalid processing type."}
+        raise HTTPException(status_code=422, detail="Invalid file type. Only JPG, JPEG, and PNG are allowed.")
+        
+    # Save uploaded file to disk
     file_path = f"../temp/{file.filename}"
     with open(file_path, "wb") as buffer:
         while True:
@@ -61,18 +57,16 @@ async def process_image(file: UploadFile = File(...)):
             if not chunk:
                 break
             buffer.write(chunk)
-    external_url = app.url_path_for(file.filename)
 
-    return {"filename": file.filename, "file_path": external_url, "message": "File uploaded successfully."}
+    # Process uploaded file using subprocess
+    data = subprocess.run(["python", "api_process.py", file_path], stdout=subprocess.PIPE)
+    result = ast.literal_eval(data.stdout.decode('utf-8'))
 
+    # Create URL for uploaded image
+    base_url = str(request.base_url)
+    image_url = f"{base_url}image/{file.filename}"
 
-# @app.post("/api/upload")
-# async def root(file: UploadFile = File(...)):
-#     file_path = f"../temp/{file.filename}"
-#     with open(file_path, "wb") as buffer:
-#         while True:
-#             chunk = await file.read(1024)
-#             if not chunk:
-#                 break
-#             buffer.write(chunk)
-#     return {"filename": file.filename, "file_path": file_path, "message": "File uploaded successfully."}
+    # Return response
+    return {"filename": file.filename, "image_url": image_url, "process_type": process_type, "message": "File uploaded successfully.", "data": result}
+
+app.mount("/image", StaticFiles(directory="../temp"))
