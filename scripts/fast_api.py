@@ -2,7 +2,8 @@ import json
 import os
 import csv
 import ast
-from fastapi import FastAPI, Request, File, UploadFile, HTTPException, Body, StaticFiles
+from fastapi import FastAPI, Request, File, UploadFile, HTTPException, Body
+from fastapi.staticfiles import StaticFiles
 import subprocess
 
 app = FastAPI()
